@@ -87,7 +87,7 @@ to quickly create a Cobra application.`,
 		
 		// Create S3 service client
 		svc := s3.New(sess)
-		filename := os.Args[1]
+		filename := os.args[1]
 
 		file, err := os.Open(filename)
 		if err != nil {
