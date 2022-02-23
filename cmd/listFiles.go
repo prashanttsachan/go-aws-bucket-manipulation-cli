@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"fmt"
-
+	"time"
 	"github.com/spf13/cobra"
 	"github.com/aws/aws-sdk-go/aws"
     "github.com/aws/aws-sdk-go/service/s3"
@@ -35,22 +35,29 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("listFiles called")
+		fmt.Println("Listing all files... ")
 		env := config.Getenv()
 		sess := config.ConnectAws();
 		// Create S3 service client
 		svc := s3.New(sess)
-		resp, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{Bucket: aws.String(env.Bucket)})
+		resp, err := svc.ListObjectsV2(&s3.ListObjectsV2Input{
+			Bucket: aws.String(env.Bucket),
+			Prefix: aws.String(env.Folder),
+		})
 		if err != nil {
 			config.ExitErrorf("Unable to list items in bucket %q, %v", env.Bucket, err)
 		}
 
+		today := time.Now()
 		for _, item := range resp.Contents {
-			fmt.Println("Name:         ", *item.Key)
-			fmt.Println("Last modified:", *item.LastModified)
-			fmt.Println("Size:         ", *item.Size)
-			fmt.Println("Storage class:", *item.StorageClass)
-			fmt.Println("")
+			diff := today.Sub(*item.LastModified)
+        	if diff.Hours() <= 24 {
+				fmt.Println("Name:         ", *item.Key)
+				fmt.Println("Last modified:", *item.LastModified)
+				fmt.Println("Size:         ", *item.Size)
+				fmt.Println("Storage class:", *item.StorageClass)
+				fmt.Println("")
+			}
 		}
 	},
 }

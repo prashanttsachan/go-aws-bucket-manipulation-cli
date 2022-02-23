@@ -34,12 +34,15 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("delete called")
+		fmt.Println("Deleting file...")
 		env := config.Getenv()
 		sess := config.ConnectAws();
 		svc := s3.New(sess)
-		obj := args[1]
-		svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(env.Bucket), Key: aws.String(obj)})
+		obj := args[0]
+		svc.DeleteObject(&s3.DeleteObjectInput{
+			Bucket: aws.String(env.Bucket), 
+			Key: aws.String(obj),
+		})
 		_, err := svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(env.Bucket), Key: aws.String(obj)})
 		if err != nil {
 			config.ExitErrorf("Unable to delete object %q from bucket %q, %v", obj, env.Bucket, err)

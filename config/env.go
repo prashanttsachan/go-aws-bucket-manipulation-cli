@@ -11,6 +11,7 @@ type Config struct {
     SecretAccessKey string
     MyRegion string
 	Bucket string
+	Folder string
 }
 
 func LoadEnv() {
@@ -27,12 +28,12 @@ func GetEnvWithKey(key string) string {
 
 func Getenv() Config {
 	LoadEnv()
-	var Bucket string
+	var Folder string
 	if GetEnvWithKey("ENVIRONMENT") ==  "production" {
-		Bucket = GetEnvWithKey("AWS_BUCKET_PUBLIC")
+		Folder = GetEnvWithKey("AWS_BUCKET_PUBLIC")
 	} else {
-		Bucket = GetEnvWithKey("AWS_BUCKET_PUBLIC_TEST")
+		Folder = GetEnvWithKey("AWS_BUCKET_PUBLIC_TEST")
 	}
-	m := Config { GetEnvWithKey("AWS_ACCESS_KEY_ID"), GetEnvWithKey("AWS_SECRET_ACCESS_KEY"), GetEnvWithKey("AWS_REGION"), Bucket }
+	m := Config { GetEnvWithKey("AWS_ACCESS_KEY_ID"), GetEnvWithKey("AWS_SECRET_ACCESS_KEY"), GetEnvWithKey("AWS_REGION"), GetEnvWithKey("AWS_BUCKET"),  Folder}
 	return m
 }

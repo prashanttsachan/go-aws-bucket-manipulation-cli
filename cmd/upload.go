@@ -18,8 +18,10 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 	"github.com/spf13/cobra"
 	"github.com/aws/aws-sdk-go/aws"
+	// "github.com/aws/aws-sdk-go/service/s3"
     "github.com/aws/aws-sdk-go/service/s3/s3manager"
     config "bucket/config"
 )
@@ -35,11 +37,11 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("upload called")
+		fmt.Println("Uploading your file...")
 		env := config.Getenv()
 		sess := config.ConnectAws();
 		// Create S3 service client
-		filename := args[1]
+		filename := args[0]
 
 		file, err := os.Open(filename)
 		if err != nil {
@@ -48,18 +50,19 @@ to quickly create a Cobra application.`,
 
 		defer file.Close()
 
+		fileString := strings.Split(filename, "/")
 		uploader := s3manager.NewUploader(sess)
-		_, err = uploader.Upload(&s3manager.UploadInput{
+		success, err := uploader.Upload(&s3manager.UploadInput{
 			Bucket: aws.String(env.Bucket),
-			Key: aws.String(filename),
+			Key: aws.String(env.Folder + "/" + fileString[len(fileString)-1]),
 			Body: file,
 		})
 		if err != nil {
 			// Print the error and exit.
 			config.ExitErrorf("Unable to upload %q to %q, %v", filename, env.Bucket, err)
 		}
-		
-		fmt.Printf("Successfully uploaded %q to %q\n", filename, env.Bucket)
+		fmt.Printf("%q\n", success)
+		fmt.Printf("File uploaded successfully %q to %q\n", filename, env.Bucket)
 		
 	},
 }
