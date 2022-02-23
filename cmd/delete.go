@@ -17,34 +17,11 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"github.com/spf13/cobra"
 	"github.com/aws/aws-sdk-go/aws"
-    "github.com/aws/aws-sdk-go/aws/session"
     "github.com/aws/aws-sdk-go/service/s3"
+	config "bucket/config"
 )
-
-var AccessKeyID string
-var SecretAccessKey string
-var MyRegion string
-var bucket string
-
-func exitErrorf(msg string, args ...interface{}) {
-    fmt.Fprintf(os.Stderr, msg+"\n", args...)
-    os.Exit(1)
-}
-
-func LoadEnv() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		fmt.Println("Error loading .env file")
-		os.Exit(1)
-	}
-}
-
-func GetEnvWithKey(key string) string {
-	return os.Getenv(key)
-}
 
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
@@ -58,42 +35,18 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("delete called")
-		LoadEnv()
-		AccessKeyID = GetEnvWithKey("AWS_ACCESS_KEY_ID")
-		SecretAccessKey = GetEnvWithKey("AWS_SECRET_ACCESS_KEY")
-		MyRegion = GetEnvWithKey("AWS_REGION")
-		if GetEnvWithKey("ENVIRONMENT") ==  "production" {
-			bucket = GetEnvWithKey("AWS_BUCKET_PUBLIC")
-		}
-		else {
-			bucket = GetEnvWithKey("AWS_BUCKET_PUBLIC_TEST")
-		}
-		
-
-		sess, err := session.NewSession(
-			&aws.Config{
-				Region: aws.String(MyRegion),
-				Credentials: credentials.NewStaticCredentials(
-					AccessKeyID,
-					SecretAccessKey,
-					"", // a token will be created when the session it's used.
-				),
-			})
-
-		if err != nil {
-			panic(err)
-		}
-		
-		// Create S3 service client
+		env := config.Getenv()
+		sess := config.ConnectAws();
 		svc := s3.New(sess)
-		obj := os.args[1]
-		_, err = svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(obj)})
+		obj := args[1]
+		svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(env.Bucket), Key: aws.String(obj)})
+		_, err := svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(env.Bucket), Key: aws.String(obj)})
 		if err != nil {
-			exitErrorf("Unable to delete object %q from bucket %q, %v", obj, bucket, err)
+			config.ExitErrorf("Unable to delete object %q from bucket %q, %v", obj, env.Bucket, err)
 		}
 
 		err = svc.WaitUntilObjectNotExists(&s3.HeadObjectInput{
-			Bucket: aws.String(bucket),
+			Bucket: aws.String(env.Bucket),
 			Key:    aws.String(obj),
 		})
 

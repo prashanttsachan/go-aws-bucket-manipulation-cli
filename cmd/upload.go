@@ -17,35 +17,12 @@ package cmd
 
 import (
 	"fmt"
-
+	"os"
 	"github.com/spf13/cobra"
 	"github.com/aws/aws-sdk-go/aws"
-    "github.com/aws/aws-sdk-go/aws/session"
     "github.com/aws/aws-sdk-go/service/s3/s3manager"
-    "os"
+    config "bucket/config"
 )
-
-var AccessKeyID string
-var SecretAccessKey string
-var MyRegion string
-var bucket string
-
-func exitErrorf(msg string, args ...interface{}) {
-    fmt.Fprintf(os.Stderr, msg+"\n", args...)
-    os.Exit(1)
-}
-
-func LoadEnv() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		fmt.Println("Error loading .env file")
-		os.Exit(1)
-	}
-}
-
-func GetEnvWithKey(key string) string {
-	return os.Getenv(key)
-}
 
 // uploadCmd represents the upload command
 var uploadCmd = &cobra.Command{
@@ -59,55 +36,30 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("upload called")
-		LoadEnv()
-		AccessKeyID = GetEnvWithKey("AWS_ACCESS_KEY_ID")
-		SecretAccessKey = GetEnvWithKey("AWS_SECRET_ACCESS_KEY")
-		MyRegion = GetEnvWithKey("AWS_REGION")
-		if GetEnvWithKey("ENVIRONMENT") ==  "production" {
-			bucket = GetEnvWithKey("AWS_BUCKET_PUBLIC")
-		}
-		else {
-			bucket = GetEnvWithKey("AWS_BUCKET_PUBLIC_TEST")
-		}
-		
-
-		sess, err := session.NewSession(
-			&aws.Config{
-				Region: aws.String(MyRegion),
-				Credentials: credentials.NewStaticCredentials(
-					AccessKeyID,
-					SecretAccessKey,
-					"", // a token will be created when the session it's used.
-				),
-			})
-
-		if err != nil {
-			panic(err)
-		}
-		
+		env := config.Getenv()
+		sess := config.ConnectAws();
 		// Create S3 service client
-		svc := s3.New(sess)
-		filename := os.args[1]
+		filename := args[1]
 
 		file, err := os.Open(filename)
 		if err != nil {
-			exitErrorf("Unable to open file %q, %v", err)
+			config.ExitErrorf("Unable to open file %q, %v", err)
 		}
 
 		defer file.Close()
 
 		uploader := s3manager.NewUploader(sess)
 		_, err = uploader.Upload(&s3manager.UploadInput{
-			Bucket: aws.String(bucket),
+			Bucket: aws.String(env.Bucket),
 			Key: aws.String(filename),
 			Body: file,
 		})
 		if err != nil {
 			// Print the error and exit.
-			exitErrorf("Unable to upload %q to %q, %v", filename, bucket, err)
+			config.ExitErrorf("Unable to upload %q to %q, %v", filename, env.Bucket, err)
 		}
 		
-		fmt.Printf("Successfully uploaded %q to %q\n", filename, bucket)
+		fmt.Printf("Successfully uploaded %q to %q\n", filename, env.Bucket)
 		
 	},
 }
